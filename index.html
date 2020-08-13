@@ -2,10 +2,9 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8">
-  <title>Video Conferencing using RTCMultiConnection</title>
+  <title>P2p Conference Test</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
-  <link rel="shortcut icon" href="/demos/logo.png">
-  <link rel="stylesheet" href="/demos/stylesheet.css">
+  <link rel="stylesheet" href="/style/stylesheet.css">
 </head>
 <body>
   <h1>
@@ -33,15 +32,15 @@
     <div id="room-urls" style="text-align: center;display: none;background: #F1EDED;margin: 15px -10px;border: 1px solid rgb(189, 189, 189);border-left: 0;border-right: 0;"></div>
   </section>
 
-<script src="/dist/RTCMultiConnection.min.js"></script>
-<script src="/node_modules/webrtc-adapter/out/adapter.js"></script>
-<script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
+<script src="/script/RTCMultiConnection.min.js"></script>
+<script src="/script/adapter.js"></script>
+<script src="/script/socket.io.js"></script>
 
 <!-- custom layout for HTML5 audio/video elements -->
-<link rel="stylesheet" href="/dev/getHTMLMediaElement.css">
-<script src="/dev/getHTMLMediaElement.js"></script>
+<link rel="stylesheet" href="/style/getHTMLMediaElement.css">
+<script src="/script/getHTMLMediaElement.js"></script>
 
-<script src="/node_modules/recordrtc/RecordRTC.js"></script>
+<script src="/script/RecordRTC.min.js"></script>
 <script>
 // ......................................................
 // .......................UI Code........................
@@ -451,6 +450,6 @@ if(navigator.connection &&
     <small id="send-message"></small>
   </footer>
 
-  <script src="https://www.webrtc-experiment.com/common.js"></script>
+  <script src="/script/common.js"></script>
 </body>
 </html>

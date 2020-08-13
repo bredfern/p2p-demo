@@ -116,7 +116,8 @@ connection.sdpConstraints.mandatory = {
 
 // STAR_FIX_VIDEO_AUTO_PAUSE_ISSUES
 // via: https://github.com/muaz-khan/RTCMultiConnection/issues/778#issuecomment-524853468
-var bitrates = 512;
+//var bitrates = 512;
+var bitrates = 128;
 var resolutions = 'SD';
 var videoConstraints = {};
 
@@ -128,7 +129,7 @@ if (resolutions == 'SD') {
         height: {
             ideal: 320
         },
-        frameRate: 30
+        frameRate: 15
     };
 }
 
@@ -178,8 +179,8 @@ connection.processSdp = function(sdp) {
         });
 
         sdp = CodecsHandler.setVideoBitrates(sdp, {
-            min: bitrates * 8 * 1024,
-            max: bitrates * 8 * 1024,
+            min: bitrates * 1 * 1024,
+            max: bitrates * 1 * 1024,
         });
     }
 
@@ -226,6 +227,11 @@ connection.iceServers = [{
 
 connection.videosContainer = document.getElementById('videos-container');
 connection.onstream = function(event) {
+/*     
+    if (navigator.mediaDevices.getSupportedConstraints().echoCancellation) {
+        MediaTrackSettings.echoCancellation = true;
+    }
+ */
     var existing = document.getElementById(event.streamid);
     if(existing && existing.parentNode) {
       existing.parentNode.removeChild(existing);

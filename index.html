@@ -16,15 +16,9 @@
 
   <section class="make-center">
     <div>
-      <label><input type="checkbox" id="record-entire-conference"> Record Entire Conference In The Browser?</label>
-      <span id="recording-status" style="display: none;"></span>
-      <button id="btn-stop-recording" style="display: none;">Stop Recording</button>
-      <br><br>
-
       <input type="text" id="room-id" value="abcdef" autocorrect=off autocapitalize=off size=20>
       <button id="open-room">Open Room</button>
       <button id="join-room">Join Room</button>
-      <button id="open-or-join-room">Auto Open Or Join Room</button>
     </div>
 
     <div id="videos-container" style="margin: 20px 0;"></div>
@@ -40,7 +34,6 @@
 <link rel="stylesheet" href="/style/getHTMLMediaElement.css">
 <script src="/script/getHTMLMediaElement.js"></script>
 
-<script src="/script/RecordRTC.min.js"></script>
 <script>
 // ......................................................
 // .......................UI Code........................
@@ -76,20 +69,6 @@ document.getElementById('join-room').onclick = function() {
     });
 };
 
-document.getElementById('open-or-join-room').onclick = function() {
-    disableInputButtons();
-    connection.openOrJoin(document.getElementById('room-id').value, function(isRoomExist, roomid, error) {
-        if(error) {
-          disableInputButtons(true);
-          alert(error);
-        }
-        else if (connection.isInitiator === true) {
-            // if room doesn't exist, it means that current user will create the room
-            showRoomURL(roomid);
-        }
-    });
-};
-
 // ......................................................
 // ..................RTCMultiConnection Code.............
 // ......................................................
@@ -117,19 +96,19 @@ connection.sdpConstraints.mandatory = {
 // STAR_FIX_VIDEO_AUTO_PAUSE_ISSUES
 // via: https://github.com/muaz-khan/RTCMultiConnection/issues/778#issuecomment-524853468
 //var bitrates = 512;
-var bitrates = 128;
+var bitrates = 28;
 var resolutions = 'SD';
 var videoConstraints = {};
 
 if (resolutions == 'SD') {
     videoConstraints = {
         width: {
-            ideal: 480
+            ideal: 160
         },
         height: {
-            ideal: 320
+            ideal: 120
         },
-        frameRate: 15
+        frameRate: 5
     };
 }
 
@@ -173,14 +152,14 @@ connection.processSdp = function(sdp) {
 
     if (resolutions == 'SD') {
         sdp = CodecsHandler.setApplicationSpecificBandwidth(sdp, {
-            audio: 128,
+            audio: 28,
             video: bitrates,
             screen: bitrates
         });
 
         sdp = CodecsHandler.setVideoBitrates(sdp, {
-            min: bitrates * 1 * 1024,
-            max: bitrates * 1 * 1024,
+            min: bitrates,
+            max: bitrates,
         });
     }
 
@@ -262,11 +241,12 @@ connection.onstream = function(event) {
     }
     video.srcObject = event.stream;
 
-    var width = parseInt(connection.videosContainer.clientWidth / 3) - 20;
+    //var width = parseInt(connection.videosContainer.clientWidth / 3) - 20;
+    var videoWidth = '20px';
     var mediaElement = getHTMLMediaElement(video, {
         title: event.userid,
         buttons: ['full-screen'],
-        width: '60px',
+        width: videoWidth,
         showOnMouseEnter: false
     });
 
@@ -281,32 +261,6 @@ connection.onstream = function(event) {
     // to keep room-id in cache
     localStorage.setItem(connection.socketMessageEvent, connection.sessionid);
 
-    chkRecordConference.parentNode.style.display = 'none';
-
-    if(chkRecordConference.checked === true) {
-      btnStopRecording.style.display = 'inline-block';
-      recordingStatus.style.display = 'inline-block';
-
-      var recorder = connection.recorder;
-      if(!recorder) {
-        recorder = RecordRTC([event.stream], {
-          type: 'video'
-        });
-        recorder.startRecording();
-        connection.recorder = recorder;
-      }
-      else {
-        recorder.getInternalRecorder().addStreams([event.stream]);
-      }
-
-      if(!connection.recorder.streams) {
-        connection.recorder.streams = [];
-      }
-
-      connection.recorder.streams.push(event.stream);
-      recordingStatus.innerHTML = 'Recording ' + connection.recorder.streams.length + ' streams';
-    }
-
     if(event.type === 'local') {
       connection.socket.on('disconnect', function() {
         if(!connection.getAllParticipants().length) {
@@ -314,23 +268,6 @@ connection.onstream = function(event) {
         }
       });
     }
-};
-
-var recordingStatus = document.getElementById('recording-status');
-var chkRecordConference = document.getElementById('record-entire-conference');
-var btnStopRecording = document.getElementById('btn-stop-recording');
-btnStopRecording.onclick = function() {
-  var recorder = connection.recorder;
-  if(!recorder) return alert('No recorder found.');
-  recorder.stopRecording(function() {
-    var blob = recorder.getBlob();
-    invokeSaveAsDialog(blob);
-
-    connection.recorder = null;
-    btnStopRecording.style.display = 'none';
-    recordingStatus.style.display = 'none';
-    chkRecordConference.parentNode.style.display = 'inline-block';
-  });
 };
 
 connection.onstreamended = function(event) {
@@ -363,7 +300,6 @@ connection.onMediaError = function(e) {
 function disableInputButtons(enable) {
     document.getElementById('room-id').onkeyup();
 
-    document.getElementById('open-or-join-room').disabled = !enable;
     document.getElementById('open-room').disabled = !enable;
     document.getElementById('join-room').disabled = !enable;
     document.getElementById('room-id').disabled = !enable;

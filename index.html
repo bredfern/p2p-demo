@@ -98,10 +98,8 @@ connection.sdpConstraints.mandatory = {
 //var bitrates = 512;
 var bitrates = 22;
 var resolutions = 'SD';
-var videoConstraints = {};
 
-if (resolutions == 'SD') {
-    videoConstraints = {
+const videoConstraints = {
         width: {
             ideal: 160
         },
@@ -110,31 +108,6 @@ if (resolutions == 'SD') {
         },
         frameRate: 5
     };
-}
-
-if (resolutions == 'HD') {
-    videoConstraints = {
-        width: {
-            ideal: 1280
-        },
-        height: {
-            ideal: 720
-        },
-        frameRate: 30
-    };
-}
-
-if (resolutions == 'Ultra-HD') {
-    videoConstraints = {
-        width: {
-            ideal: 1920
-        },
-        height: {
-            ideal: 1080
-        },
-        frameRate: 30
-    };
-}
 
 connection.mediaConstraints = {
     video: videoConstraints,
@@ -144,51 +117,23 @@ connection.mediaConstraints = {
 var CodecsHandler = connection.CodecsHandler;
 
 connection.processSdp = function(sdp) {
-    var codecs = 'vp8';
+    let codecs = 'vp8';
     
     if (codecs.length) {
         sdp = CodecsHandler.preferCodec(sdp, codecs.toLowerCase());
     }
 
-    if (resolutions == 'SD') {
-        sdp = CodecsHandler.setApplicationSpecificBandwidth(sdp, {
-            audio: 28,
-            video: bitrates,
-            screen: bitrates
-        });
+    sdp = CodecsHandler.setApplicationSpecificBandwidth(sdp, {
+      audio: 28,
+      video: bitrates,
+      screen: bitrates
+    });
 
-        sdp = CodecsHandler.setVideoBitrates(sdp, {
-            min: bitrates,
-            max: bitrates,
-        });
-    }
-
-    if (resolutions == 'HD') {
-        sdp = CodecsHandler.setApplicationSpecificBandwidth(sdp, {
-            audio: 128,
-            video: bitrates,
-            screen: bitrates
-        });
-
-        sdp = CodecsHandler.setVideoBitrates(sdp, {
-            min: bitrates * 8 * 1024,
-            max: bitrates * 8 * 1024,
-        });
-    }
-
-    if (resolutions == 'Ultra-HD') {
-        sdp = CodecsHandler.setApplicationSpecificBandwidth(sdp, {
-            audio: 128,
-            video: bitrates,
-            screen: bitrates
-        });
-
-        sdp = CodecsHandler.setVideoBitrates(sdp, {
-            min: bitrates * 8 * 1024,
-            max: bitrates * 8 * 1024,
-        });
-    }
-
+    sdp = CodecsHandler.setVideoBitrates(sdp, {
+      min: bitrates,
+      max: bitrates,
+    });
+    
     return sdp;
 };
 // END_FIX_VIDEO_AUTO_PAUSE_ISSUES
@@ -241,8 +186,8 @@ connection.onstream = function(event) {
     }
     video.srcObject = event.stream;
 
-    //var width = parseInt(connection.videosContainer.clientWidth / 3) - 20;
-    var videoWidth = '20px';
+    var width = parseInt(connection.videosContainer.clientWidth / 10) - 20;
+    //var videoWidth = '20px';
     var mediaElement = getHTMLMediaElement(video, {
         title: event.userid,
         buttons: ['full-screen'],
@@ -252,14 +197,14 @@ connection.onstream = function(event) {
 
     connection.videosContainer.appendChild(mediaElement);
 
-    setTimeout(function() {
+    setTimeout(() => {
         mediaElement.media.play();
     }, 5000);
 
     mediaElement.id = event.streamid;
 
     // to keep room-id in cache
-    //localStorage.setItem(connection.socketMessageEvent, connection.sessionid);
+    localStorage.setItem(connection.socketMessageEvent, connection.sessionid);
 
     if(event.type === 'local') {
       connection.socket.on('disconnect', function() {

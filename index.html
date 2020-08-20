@@ -259,7 +259,7 @@ connection.onstream = function(event) {
     mediaElement.id = event.streamid;
 
     // to keep room-id in cache
-    localStorage.setItem(connection.socketMessageEvent, connection.sessionid);
+    //localStorage.setItem(connection.socketMessageEvent, connection.sessionid);
 
     if(event.type === 'local') {
       connection.socket.on('disconnect', function() {

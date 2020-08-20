@@ -2,23 +2,25 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8">
-  <title>P2p Conference Test</title>
+  <title>Video Conferencing using RTCMultiConnection</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
-  <link rel="stylesheet" href="/style/stylesheet.css">
+  <link rel="shortcut icon" href="/demos/logo.png">
+  <link rel="stylesheet" href="/demos/stylesheet.css">
 </head>
 <body>
-  <h1>
-    Demo
-    <p class="no-mobile">
-      Multi-user (many-to-many) video chat using mesh networking model.
-    </p>
-  </h1>
+    <h1>Many to Many</h1>
 
   <section class="make-center">
     <div>
+      <label><input type="checkbox" id="record-entire-conference"> Record Entire Conference In The Browser?</label>
+      <span id="recording-status" style="display: none;"></span>
+      <button id="btn-stop-recording" style="display: none;">Stop Recording</button>
+      <br><br>
+
       <input type="text" id="room-id" value="abcdef" autocorrect=off autocapitalize=off size=20>
       <button id="open-room">Open Room</button>
       <button id="join-room">Join Room</button>
+      <button id="open-or-join-room">Auto Open Or Join Room</button>
     </div>
 
     <div id="videos-container" style="margin: 20px 0;"></div>
@@ -26,14 +28,15 @@
     <div id="room-urls" style="text-align: center;display: none;background: #F1EDED;margin: 15px -10px;border: 1px solid rgb(189, 189, 189);border-left: 0;border-right: 0;"></div>
   </section>
 
-<script src="/script/RTCMultiConnection.min.js"></script>
-<script src="/script/adapter.js"></script>
-<script src="/script/socket.io.js"></script>
+<script src="/dist/RTCMultiConnection.min.js"></script>
+<script src="/node_modules/webrtc-adapter/out/adapter.js"></script>
+<script src="/socket.io/socket.io.js"></script>
 
 <!-- custom layout for HTML5 audio/video elements -->
-<link rel="stylesheet" href="/style/getHTMLMediaElement.css">
-<script src="/script/getHTMLMediaElement.js"></script>
+<link rel="stylesheet" href="/dev/getHTMLMediaElement.css">
+<script src="/dev/getHTMLMediaElement.js"></script>
 
+<script src="/node_modules/recordrtc/RecordRTC.js"></script>
 <script>
 // ......................................................
 // .......................UI Code........................
@@ -69,6 +72,20 @@ document.getElementById('join-room').onclick = function() {
     });
 };
 
+document.getElementById('open-or-join-room').onclick = function() {
+    disableInputButtons();
+    connection.openOrJoin(document.getElementById('room-id').value, function(isRoomExist, roomid, error) {
+        if(error) {
+          disableInputButtons(true);
+          alert(error);
+        }
+        else if (connection.isInitiator === true) {
+            // if room doesn't exist, it means that current user will create the room
+            showRoomURL(roomid);
+        }
+    });
+};
+
 // ......................................................
 // ..................RTCMultiConnection Code.............
 // ......................................................
@@ -76,7 +93,7 @@ document.getElementById('join-room').onclick = function() {
 var connection = new RTCMultiConnection();
 
 // by default, socket.io server is assumed to be deployed on your own URL
-connection.socketURL = 'https://redfern-signalserver.herokuapp.com/';
+connection.socketURL = '/';
 
 // comment-out below line if you do not have your own socket.io server
 // connection.socketURL = 'https://rtcmulticonnection.herokuapp.com:443/';
@@ -95,19 +112,33 @@ connection.sdpConstraints.mandatory = {
 
 // STAR_FIX_VIDEO_AUTO_PAUSE_ISSUES
 // via: https://github.com/muaz-khan/RTCMultiConnection/issues/778#issuecomment-524853468
-//var bitrates = 512;
-var bitrates = 22;
-var resolutions = 'SD';
+var bitrates = 512;
+var resolutions = 'Ultra-HD';
+var videoConstraints = {};
 
-const videoConstraints = {
+if (resolutions == 'HD') {
+    videoConstraints = {
         width: {
-            ideal: 160
+            ideal: 1280
         },
         height: {
-            ideal: 120
+            ideal: 720
         },
-        frameRate: 5
+        frameRate: 30
     };
+}
+
+if (resolutions == 'Ultra-HD') {
+    videoConstraints = {
+        width: {
+            ideal: 1920
+        },
+        height: {
+            ideal: 1080
+        },
+        frameRate: 30
+    };
+}
 
 connection.mediaConstraints = {
     video: videoConstraints,
@@ -117,23 +148,38 @@ connection.mediaConstraints = {
 var CodecsHandler = connection.CodecsHandler;
 
 connection.processSdp = function(sdp) {
-    let codecs = 'vp8';
+    var codecs = 'vp8';
     
     if (codecs.length) {
         sdp = CodecsHandler.preferCodec(sdp, codecs.toLowerCase());
     }
 
-    sdp = CodecsHandler.setApplicationSpecificBandwidth(sdp, {
-      audio: 28,
-      video: bitrates,
-      screen: bitrates
-    });
+    if (resolutions == 'HD') {
+        sdp = CodecsHandler.setApplicationSpecificBandwidth(sdp, {
+            audio: 128,
+            video: bitrates,
+            screen: bitrates
+        });
 
-    sdp = CodecsHandler.setVideoBitrates(sdp, {
-      min: bitrates,
-      max: bitrates,
-    });
-    
+        sdp = CodecsHandler.setVideoBitrates(sdp, {
+            min: bitrates * 8 * 1024,
+            max: bitrates * 8 * 1024,
+        });
+    }
+
+    if (resolutions == 'Ultra-HD') {
+        sdp = CodecsHandler.setApplicationSpecificBandwidth(sdp, {
+            audio: 128,
+            video: bitrates,
+            screen: bitrates
+        });
+
+        sdp = CodecsHandler.setVideoBitrates(sdp, {
+            min: bitrates * 8 * 1024,
+            max: bitrates * 8 * 1024,
+        });
+    }
+
     return sdp;
 };
 // END_FIX_VIDEO_AUTO_PAUSE_ISSUES
@@ -151,11 +197,6 @@ connection.iceServers = [{
 
 connection.videosContainer = document.getElementById('videos-container');
 connection.onstream = function(event) {
-/*     
-    if (navigator.mediaDevices.getSupportedConstraints().echoCancellation) {
-        MediaTrackSettings.echoCancellation = true;
-    }
- */
     var existing = document.getElementById(event.streamid);
     if(existing && existing.parentNode) {
       existing.parentNode.removeChild(existing);
@@ -186,18 +227,17 @@ connection.onstream = function(event) {
     }
     video.srcObject = event.stream;
 
-    var width = parseInt(connection.videosContainer.clientWidth / 10) - 20;
-    //var videoWidth = '20px';
+    var width = parseInt(connection.videosContainer.clientWidth / 3) - 20;
     var mediaElement = getHTMLMediaElement(video, {
         title: event.userid,
         buttons: ['full-screen'],
-        width: videoWidth,
+        width: width,
         showOnMouseEnter: false
     });
 
     connection.videosContainer.appendChild(mediaElement);
 
-    setTimeout(() => {
+    setTimeout(function() {
         mediaElement.media.play();
     }, 5000);
 
@@ -206,6 +246,32 @@ connection.onstream = function(event) {
     // to keep room-id in cache
     localStorage.setItem(connection.socketMessageEvent, connection.sessionid);
 
+    chkRecordConference.parentNode.style.display = 'none';
+
+    if(chkRecordConference.checked === true) {
+      btnStopRecording.style.display = 'inline-block';
+      recordingStatus.style.display = 'inline-block';
+
+      var recorder = connection.recorder;
+      if(!recorder) {
+        recorder = RecordRTC([event.stream], {
+          type: 'video'
+        });
+        recorder.startRecording();
+        connection.recorder = recorder;
+      }
+      else {
+        recorder.getInternalRecorder().addStreams([event.stream]);
+      }
+
+      if(!connection.recorder.streams) {
+        connection.recorder.streams = [];
+      }
+
+      connection.recorder.streams.push(event.stream);
+      recordingStatus.innerHTML = 'Recording ' + connection.recorder.streams.length + ' streams';
+    }
+
     if(event.type === 'local') {
       connection.socket.on('disconnect', function() {
         if(!connection.getAllParticipants().length) {
@@ -213,6 +279,23 @@ connection.onstream = function(event) {
         }
       });
     }
+};
+
+var recordingStatus = document.getElementById('recording-status');
+var chkRecordConference = document.getElementById('record-entire-conference');
+var btnStopRecording = document.getElementById('btn-stop-recording');
+btnStopRecording.onclick = function() {
+  var recorder = connection.recorder;
+  if(!recorder) return alert('No recorder found.');
+  recorder.stopRecording(function() {
+    var blob = recorder.getBlob();
+    invokeSaveAsDialog(blob);
+
+    connection.recorder = null;
+    btnStopRecording.style.display = 'none';
+    recordingStatus.style.display = 'none';
+    chkRecordConference.parentNode.style.display = 'inline-block';
+  });
 };
 
 connection.onstreamended = function(event) {
@@ -245,6 +328,7 @@ connection.onMediaError = function(e) {
 function disableInputButtons(enable) {
     document.getElementById('room-id').onkeyup();
 
+    document.getElementById('open-or-join-room').disabled = !enable;
     document.getElementById('open-room').disabled = !enable;
     document.getElementById('join-room').disabled = !enable;
     document.getElementById('room-id').disabled = !enable;
@@ -337,6 +421,6 @@ if(navigator.connection &&
     <small id="send-message"></small>
   </footer>
 
-  <script src="/script/common.js"></script>
+  <script src="https://www.webrtc-experiment.com/common.js"></script>
 </body>
 </html>

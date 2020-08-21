@@ -237,7 +237,7 @@ if (roomid && roomid.length) {
 
     // auto-join-room
     (function reCheckRoomPresence() {
-        connection.checkPresence(roomid, function(isRoomExist) {
+        connection.checkPresence(roomid, (isRoomExist) => {
             if (isRoomExist) {
                 connection.join(roomid);
                 return;

@@ -147,7 +147,7 @@ connection.onstream = (event) => {
     const mediaElement = getHTMLMediaElement(video, {
         title: event.userid,
         buttons: ['full-screen'],
-        width: 20,
+        width: '20%',
         showOnMouseEnter: false
     });
 
@@ -201,7 +201,7 @@ if (localStorage.getItem(connection.socketMessageEvent)) {
     roomid = connection.token();
 }
 
-if (roomid && roomid.length) {
+/* if (roomid && roomid.length) {
   
     localStorage.setItem(connection.socketMessageEvent, roomid);
 
@@ -217,7 +217,7 @@ if (roomid && roomid.length) {
         });
     })();
 
-}
+} */
 
 </script>
 

@@ -59,7 +59,7 @@ connection.sdpConstraints.mandatory = {
     OfferToReceiveVideo: true
 };
 
-let bitrates = 12;
+let bitrates = 22;
 let resolutions = 'HD';
 let videoConstraints = {};
 
@@ -109,8 +109,8 @@ connection.processSdp = function(sdp) {
         });
 
         sdp = CodecsHandler.setVideoBitrates(sdp, {
-            min: 256,
-            max: bitrates * 8 * 256,
+            min: bitrates,
+            max: bitrates,
         });
     }
 

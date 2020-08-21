@@ -108,14 +108,14 @@ connection.processSdp = function(sdp) {
 
     if (resolutions == 'HD') {
         sdp = CodecsHandler.setApplicationSpecificBandwidth(sdp, {
-            audio: 128,
+            audio: 32,
             video: bitrates,
             screen: bitrates
         });
 
         sdp = CodecsHandler.setVideoBitrates(sdp, {
-            min: bitrates * 8 * 1024,
-            max: bitrates * 8 * 1024,
+            min: 256,
+            max: bitrates * 8 * 256,
         });
     }
 

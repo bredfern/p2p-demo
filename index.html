@@ -24,6 +24,7 @@
 <script src="script/getHTMLMediaElement.js"></script>
 <script>
 const roomName = 'hello';
+let roomid;
 
 window.addEventListener('load',startSession,false);
 
@@ -194,7 +195,6 @@ connection.onMediaError = (e) => {
     }
 };
 
-let roomid = '';
 if (localStorage.getItem(connection.socketMessageEvent)) {
     roomid = localStorage.getItem(connection.socketMessageEvent);
 } else {
